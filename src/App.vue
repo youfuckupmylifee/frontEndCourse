@@ -1,34 +1,15 @@
 <template>
-  <div class="app">
-    <h1>Учет расходов</h1>
-    
-    <!-- Вывод балансов -->
-    <div v-if="history.length">
-      <p>Доходы: {{ incomeBalance }} руб.</p>
-      <p>Расходы: {{ outcomeBalance }} руб.</p>
-      <p>Баланс: {{ totalBalance }} руб.</p>
-    </div>
-    <p v-else>Вы не совершали финансовых операций.</p>
-    
-    <ul>
-      <!-- Отображение истории транзакций -->
-      <li v-for="item in history" :key="item.id">
-        {{ item.text }} - {{ item.amount > 0 ? '+' : '' }}{{ item.amount }} руб.
-      </li>
-    </ul>
-
-    <!-- Форма для добавления новых транзакций -->
-    <form @submit.prevent="addTransaction">
-      <div>
-        <label for="title">Название статьи:</label>
-        <input id="title" type="text" v-model.trim="title" placeholder="Название статьи">
-      </div>
-      <div>
-        <label for="amount">Сумма (доход + / расход -):</label>
-        <input id="amount" type="number" v-model.number="amount" placeholder="Сумма">
-      </div>
-      <button type="submit">Добавить</button>
-    </form>
+  <div class="container">
+    <h1>Узнайте интересные факты о числах!</h1>
+    <input type="number" v-model="number" placeholder="Введите число" @keypress.enter="fetchFact" autofocus />
+    <select v-model="type">
+      <option value="trivia">Случайный факт</option>
+      <option value="math">Математика</option>
+      <option value="year">Год</option>
+    </select>
+    <button @click="fetchFact">Поиск</button>
+    <div v-if="loading" id="loadingIndicator"></div>
+    <div id="factOutput">{{ message }}</div>
   </div>
 </template>
 
@@ -36,120 +17,97 @@
 export default {
   data() {
     return {
-      history: [],
-      title: '',
-      amount: 0 
-    }
-  },
-  computed: {
-    incomeBalance() {
-      // Сумма всех доходных операций
-      return this.history.filter(item => item.amount > 0)
-                         .reduce((sum, item) => sum + item.amount, 0);
-    },
-    outcomeBalance() {
-      // Сумма всех расходных операций
-      return this.history.filter(item => item.amount < 0)
-                         .reduce((sum, item) => sum + item.amount, 0);
-    },
-    totalBalance() {
-      // Общий баланс
-      return this.history.reduce((sum, item) => sum + item.amount, 0);
-    }
+      number: '',
+      type: 'trivia',
+      message: '',
+      loading: false,
+    };
   },
   methods: {
-    addTransaction() {
-      if (this.title.trim() !== '' && this.amount !== 0) {
-        const newTransaction = {
-          id: Date.now(),
-          text: this.title,
-          amount: parseFloat(this.amount)
-        };
-        this.history.push(newTransaction);
-        this.title = '';
-        this.amount = 0;
-      }
-    }
-  }
-}
+    fetchFact() {
+      const url = `http://numbersapi.com/${this.number}/${this.type}?json`;
+      this.loading = true;
+      this.message = '';
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          this.loading = false;
+          this.message = data.found ? data.text : `${this.number} - скучное число/скучный год`;
+        })
+        .catch(error => {
+          this.loading = false;
+          this.message = 'Произошла ошибка при загрузке данных';
+          console.error('Error fetching fact:', error);
+        });
+    },
+  },
+};
 </script>
 
-
-<style scoped>
-/* Общие стили для приложения */
-.app {
-  max-width: 600px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-h1 {
-  color: #333;
+<style>
+body, html {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   text-align: center;
-}
-
-/* Стилизация сообщений и балансов */
-p {
-  font-size: 16px;
-  color: #666;
-  margin: 10px 0;
-}
-
-/* Стилизация списка транзакций */
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-li {
-  background-color: #fff;
-  border: 1px solid #eee;
-  padding: 10px 15px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  font-size: 16px;
+  background-color: #f4f4f9;
+  margin: 0;
+  padding: 20px;
   color: #333;
 }
 
-li:nth-child(odd) {
-  background-color: #f1f1f1;
+.container {
+  background-color: white;
+  max-width: 360px;
+  margin: 50px auto;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease-in-out;
 }
 
-/* Стилизация формы */
-form {
-  margin-top: 20px;
-}
-
-input[type="text"], input[type="number"] {
-  width: calc(100% - 22px);
+input, select, button {
+  width: calc(100% - 20px);
   padding: 10px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
+  margin-top: 10px;
+  border: 2px solid #ddd;
   border-radius: 4px;
+  transition: border-color 0.3s ease;
+}
+
+input:focus, select:focus, button:focus {
+  border-color: #0056b3;
 }
 
 button {
-  width: 100%;
-  padding: 10px;
-  background-color: #6d4fa2;
-  border: none;
+  background-color: #0056b3;
   color: white;
-  font-size: 16px;
   cursor: pointer;
-  border-radius: 4px;
-  margin-top: 10px;
+  font-weight: bold;
+  border: none;
 }
 
 button:hover {
-  background-color: #543982;
+  background-color: #003580;
 }
 
-label {
-  font-weight: bold;
+#loadingIndicator {
+  margin-top: 20px;
+  border-radius: 50%;
+  border-top: 2px solid #3498db;
+  width: 30px;
+  height: 30px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#factOutput {
+  margin-top: 20px;
+  font-size: 1.2em;
   color: #333;
 }
 </style>
