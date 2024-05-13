@@ -1,4 +1,4 @@
-# memory-game
+# newapp
 
 ## Project setup
 ```
